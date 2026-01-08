@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Panel - QR Gate Alumno</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+    <nav class="bg-blue-700 p-4 text-white shadow-md">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <h1 class="font-bold italic">QR Gate Skool</h1>
+            <button onclick="logout()" class="text-xs bg-blue-800 px-3 py-1.5 rounded-lg hover:bg-red-500 transition font-bold">Salir</button>
+        </div>
+    </nav>
+
+    <main class="max-w-md mx-auto p-6 flex flex-col items-center">
+        
+        <div class="text-center mb-6">
+            <h2 class="text-2xl font-bold text-slate-800">¡Hola, <span id="nombreAlumno">...</span>!</h2>
+            <p class="text-slate-500 text-sm">Esta es tu credencial digital de acceso.</p>
+        </div>
+
+        <div id="credencialContainer" class="bg-white rounded-3xl shadow-2xl w-full overflow-hidden border border-slate-200">
+            <div class="bg-blue-600 p-5 text-center text-white">
+                <p class="text-[10px] uppercase tracking-widest font-black opacity-80">Credencial Escolar Digital</p>
+                <p id="nombreCredencial" class="font-black text-xl mt-1 uppercase italic tracking-tight">Cargando...</p>
+            </div>
+
+            <div class="p-8 flex flex-col items-center bg-white">
+                <div id="qrcode" class="p-4 border-4 border-blue-50 rounded-3xl bg-white shadow-inner"></div>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-blue-600 font-black text-2xl tracking-tighter uppercase italic" id="rolDisplay">ALUMNO</p>
+                    <p class="text-[10px] text-slate-400 mt-2 font-mono">ID / USUARIO: <br><span id="idUnico" class="font-bold">...</span></p>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
+                <p class="text-[11px] text-slate-400 font-bold italic">Presenta este código al ingresar a la institución</p>
+            </div>
+        </div>
+
+        <div class="w-full mt-8 space-y-3">
+            <button onclick="descargarCredencial()" class="w-full bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-emerald-600 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                <span>📥</span> GUARDAR CREDENCIAL
+            </button>
+            <p class="text-center text-[11px] text-slate-400 font-medium">La imagen se guardará en tu galería de fotos.</p>
+        </div>
+
+    </main>
+
+    <script>
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+
+        window.onload = () => {
+            const userData = localStorage.getItem('userSession');
+            
+            if(!userData) {
+                window.location.replace('login.html');
+                return;
+            }
+
+            const user = JSON.parse(userData);
+
+            // Llenar datos en la interfaz
+            document.getElementById('nombreAlumno').innerText = user.nombre.split(' ')[0]; 
+            document.getElementById('nombreCredencial').innerText = user.nombre;
+            document.getElementById('rolDisplay').innerText = user.rol || "ALUMNO";
+            document.getElementById('idUnico').innerText = user.email;
+
+            // Limpiar contenedor QR por si acaso
+            document.getElementById("qrcode").innerHTML = "";
+
+            // Generar el QR usando el Email (es el ID único para el scanner)
+            new QRCode(document.getElementById("qrcode"), {
+                text: user.email,
+                width: 200,
+                height: 200,
+                colorDark : "#0f172a", // Slate-900
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+        };
+
+        async function descargarCredencial() {
+            const btn = document.querySelector('button[onclick="descargarCredencial()"]');
+            btn.innerText = "GENERANDO IMAGEN...";
+            
+            const container = document.getElementById('credencialContainer');
+            
+            try {
+                const canvas = await html2canvas(container, {
+                    scale: 3, // Mayor calidad de imagen
+                    backgroundColor: null,
+                    borderRadius: 20
+                });
+                
+                const link = document.createElement('a');
+                link.download = `Credencial_${document.getElementById('nombreAlumno').innerText}.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+            } catch (err) {
+                alert("Error al generar la imagen. Intenta tomar una captura de pantalla.");
+            } finally {
+                btn.innerHTML = "<span>📥</span> GUARDAR CREDENCIAL";
+            }
+        }
+
+        function logout() {
+            if(confirm("¿Cerrar sesión?")) {
+                localStorage.removeItem('userSession');
+                window.location.replace('login.html');
+            }
+        }
+    </script>
+</body>
+</html>

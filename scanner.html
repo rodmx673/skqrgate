@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner Pro - QR Gate</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        .scan-success { border: 10px solid #22c55e !important; box-shadow: 0 0 30px #22c55e; }
+        .scan-error { border: 10px solid #ef4444 !important; box-shadow: 0 0 30px #ef4444; }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-white p-4 font-sans">
+    <div class="max-w-md mx-auto">
+        <header class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-blue-400 italic">QR Gate Skool</h1>
+            <p class="text-slate-400 text-sm">Control de Acceso V14</p>
+        </header>
+
+        <div id="wrapper" class="bg-white rounded-3xl overflow-hidden shadow-2xl mb-6 border-4 border-slate-700 transition-all duration-300">
+            <div id="reader" class="w-full"></div>
+        </div>
+
+        <div id="resultado" class="hidden p-6 rounded-2xl text-center mb-6 transition-all duration-300 scale-105">
+            <p id="msgStatus" class="text-xs uppercase font-black tracking-widest mb-1"></p>
+            <p id="nombreEscaneado" class="text-2xl font-black uppercase">...</p>
+            <div id="iconoGrande" class="text-5xl mt-2"></div>
+        </div>
+
+        <button id="btnEncender" onclick="iniciarCamaraManual()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-full font-black text-lg shadow-lg">
+            🚀 ENCENDER CÁMARA
+        </button>
+    </div>
+
+    <script>
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        const html5QrCode = new Html5Qrcode("reader");
+        let isScanning = false;
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(freq, duration, type) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        async function iniciarCamaraManual() {
+            const btn = document.getElementById('btnEncender');
+            btn.innerText = "INICIANDO...";
+            try {
+                await html5QrCode.start({ facingMode: "environment" }, { fps: 25, qrbox: 250 }, onScanSuccess);
+                btn.classList.add('hidden');
+                isScanning = true;
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+            } catch (err) { btn.innerText = "ERROR DE CÁMARA"; }
+        }
+
+        async function onScanSuccess(decodedText) {
+            if (!isScanning) return;
+            isScanning = false;
+
+            const wrapper = document.getElementById('wrapper');
+            const panel = document.getElementById('resultado');
+            const txtNombre = document.getElementById('nombreEscaneado');
+            const txtStatus = document.getElementById('msgStatus');
+            const icono = document.getElementById('iconoGrande');
+
+            panel.className = "bg-blue-600 p-6 rounded-2xl text-center mb-6 block";
+            txtStatus.innerText = "PROCESANDO...";
+            txtNombre.innerText = "ENVIANDO...";
+            icono.innerText = "⏳";
+
+            // ---- NUEVO FETCH CON GET (SIN CORS) ----
+            fetch(`${MI_LINK_SERVIDOR}?action=scan&email=${encodeURIComponent(decodedText)}`)
+                .then(r => r.json())
+                .then(res => {
+                    console.log("Servidor respondió:", res);
+                    playSound(880, 0.1, 'sine');
+                    wrapper.classList.add('scan-success');
+                    panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
+                    txtStatus.innerText = "¡REGISTRO EXITOSO!";
+                    txtNombre.innerText = decodedText.split('@')[0];
+                    icono.innerText = "✅";
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    playSound(150, 0.3, 'sawtooth');
+                    wrapper.classList.add('scan-error');
+                    panel.className = "bg-red-600 p-6 rounded-2xl text-center mb-6 block";
+                    txtStatus.innerText = "ERROR DE RED";
+                    txtNombre.innerText = "REINTENTAR";
+                    icono.innerText = "❌";
+                })
+                .finally(() => {
+                    setTimeout(() => {
+                        panel.classList.add('hidden');
+                        wrapper.classList.remove('scan-success', 'scan-error');
+                        isScanning = true;
+                    }, 2000);
+                });
+        }
+    </script>
+</body>
+</html>
