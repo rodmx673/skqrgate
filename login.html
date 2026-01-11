@@ -23,8 +23,8 @@
     </div>
 
     <script>
-        // URL VERIFICADA (Versión 28 con Z incluida)
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // URL ACTUALIZADA A LA VERSIÓN 29 (3PA/exec)
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxVwW22zI1uoAsG6_pcHNYRwu8Y8s9RkVaEPMtt5B30tRFNO2EezcXLR2zhw6D203PA/exec";
 
         async function ejecutarLogin() {
             const email = document.getElementById('email').value.trim();
@@ -42,7 +42,6 @@
                 const resTutor = await responseTutor.json();
 
                 if(resTutor.status === "success") {
-                    // Guardamos la sesión y rol
                     const sessionData = {
                         ...resTutor,
                         rol: "Tutor",
@@ -55,23 +54,20 @@
                     return;
                 }
 
-                // PASO 2: Si no fue tutor, intentar login en USUARIOS
+                // PASO 2: Intentar login en USUARIOS
                 const responseGral = await fetch(`${MI_LINK_SERVIDOR}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
                 const resGral = await responseGral.json();
 
                 if(resGral.status === "success") {
                     localStorage.setItem('userSession', JSON.stringify(resGral));
-                    
                     alert("✅ Acceso correcto como " + resGral.rol);
 
-                    // Redirección por ROL
                     if(resGral.rol === "Director") {
                         window.location.href = 'monitor-director.html';
                     } else if(resGral.rol === "Alumno") {
                         window.location.href = 'dashboard-alumno.html';
                     } else {
                         alert("Sesión iniciada como: " + resGral.rol);
-                        // Puedes añadir más páginas aquí si tienes dashboard-docente.html
                     }
                 } else {
                     alert("❌ Credenciales incorrectas. Verifica tus datos.");

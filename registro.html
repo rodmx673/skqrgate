@@ -37,12 +37,11 @@
     </div>
 
     <script>
-        // URL CORREGIDA CON LA "Z" QUE FALTABA
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
+        // URL ACTUALIZADA A LA VERSIÓN 29 (LA NUEVA QUE ME PASASTE)
+        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxVwW22zI1uoAsG6_pcHNYRwu8Y8s9RkVaEPMtt5B30tRFNO2EezcXLR2zhw6D203PA/exec";
 
         function toggleFields() {
             const rol = document.getElementById('rol').value;
-            // Ocultamos el campo ID Escuela solo para Tutor y Director
             document.getElementById('divDirectorID').style.display = (rol === "Tutor / Padre" || rol === "Director") ? "none" : "block";
         }
 
@@ -71,31 +70,26 @@
             btn.innerText = "GUARDANDO EN EXCEL...";
 
             try {
-                // Forzamos la acción en la URL para que Google Apps Script la identifique mejor
-                const urlFinal = `${MI_LINK_SERVIDOR}?action=registro`;
-
-                await fetch(urlFinal, {
+                // Forzamos el envío
+                await fetch(MI_LINK_SERVIDOR, {
                     method: 'POST',
                     mode: 'no-cors',
-                    cache: 'no-cache',
                     body: JSON.stringify(datos)
                 });
 
-                // Damos un pequeño margen de tiempo para que el script procese
                 setTimeout(() => {
-                    alert("✅ ¡Registro enviado con éxito! Verifica tu Google Sheet.");
+                    alert("✅ ¡Registro enviado! Revisa tu Excel ahora.");
                     window.location.href = "login.html";
                 }, 1500);
 
             } catch (e) {
-                console.error("Error de registro:", e);
-                alert("❌ Hubo un problema al conectar con el servidor.");
+                console.error("Error:", e);
+                alert("❌ Fallo de conexión.");
                 btn.disabled = false;
                 btn.innerText = "Registrarse ahora";
             }
         }
 
-        // Ejecutar al inicio para ajustar campos visibles
         toggleFields();
     </script>
 </body>
