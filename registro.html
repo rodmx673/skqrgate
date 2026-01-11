@@ -9,61 +9,91 @@
 <body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
     <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
         <h1 class="text-3xl font-extrabold text-center text-blue-600 mb-2 italic">QR GATE</h1>
+        <p class="text-gray-500 text-center text-xs mb-6 font-bold uppercase tracking-widest">Crear Nueva Cuenta</p>
+        
         <div id="registroForm">
             <label class="block mb-2 text-sm font-semibold text-gray-700">¿Quién eres?</label>
-            <select id="rol" class="w-full p-3 border rounded-lg mb-4 outline-none" onchange="toggleFields()">
+            <select id="rol" class="w-full p-3 border rounded-lg mb-4 outline-none bg-gray-50 focus:ring-2 focus:ring-blue-500" onchange="toggleFields()">
                 <option value="Alumno">Alumno</option>
                 <option value="Tutor / Padre">Tutor / Padre</option>
                 <option value="Docente">Docente</option>
                 <option value="Director">Director</option>
             </select>
-            <input type="text" id="nombre" placeholder="Nombre completo" class="w-full p-3 border rounded-lg mb-4 outline-none">
-            <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-3 border rounded-lg mb-4 outline-none">
-            <input type="password" id="password" placeholder="Contraseña" class="w-full p-3 border rounded-lg mb-4 outline-none">
+            
+            <input type="text" id="nombre" placeholder="Nombre completo" class="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="email" id="email" placeholder="Correo electrónico" class="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500">
+            <input type="password" id="password" placeholder="Contraseña" class="w-full p-3 border rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-500">
+            
             <div id="divDirectorID">
-                <input type="text" id="idDirector" placeholder="ID de Escuela (Ej: ESC-8660)" class="w-full p-3 border rounded-lg mb-4 uppercase">
+                <input type="text" id="idDirector" placeholder="ID de Escuela (Ej: ESC-8660)" class="w-full p-3 border rounded-lg mb-4 uppercase focus:ring-2 focus:ring-blue-500">
             </div>
-            <button onclick="registrar()" id="btnRegistrar" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition">Registrarse ahora</button>
+            
+            <button onclick="registrar()" id="btnRegistrar" class="w-full bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-700 transition active:scale-95 shadow-lg">Registrarse ahora</button>
+            
+            <div class="mt-6 text-center">
+                <p class="text-xs text-gray-500">¿Ya tienes cuenta? <a href="login.html" class="text-blue-600 font-bold hover:underline">Inicia sesión</a></p>
+            </div>
         </div>
     </div>
 
     <script>
+        // URL DE TU VERSIÓN 27
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
 
         function toggleFields() {
             const rol = document.getElementById('rol').value;
+            // Ocultamos el campo ID Escuela solo para Tutor y Director
             document.getElementById('divDirectorID').style.display = (rol === "Tutor / Padre" || rol === "Director") ? "none" : "block";
         }
 
         async function registrar() {
             const btn = document.getElementById('btnRegistrar');
+            const rol = document.getElementById('rol').value;
+            const nombre = document.getElementById('nombre').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const idDirector = document.getElementById('idDirector').value.trim();
+
+            if(!nombre || !email || !password) {
+                return alert("⚠️ Por favor, completa todos los campos obligatorios.");
+            }
+
             const datos = {
                 action: 'registro',
-                rol: document.getElementById('rol').value,
-                nombre: document.getElementById('nombre').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                password: document.getElementById('password').value.trim(),
-                idDirectorIngresado: document.getElementById('idDirector').value.trim()
+                rol: rol,
+                nombre: nombre,
+                email: email,
+                password: password,
+                idDirectorIngresado: idDirector || "N/A"
             };
 
-            if(!datos.nombre || !datos.email || !datos.password) return alert("Faltan datos");
-
             btn.disabled = true;
-            btn.innerText = "Guardando...";
+            btn.innerText = "GUARDANDO EN EXCEL...";
 
             try {
+                // Enviamos los datos al servidor
                 await fetch(MI_LINK_SERVIDOR, {
                     method: 'POST',
-                    mode: 'no-cors',
+                    mode: 'no-cors', // Necesario para evitar bloqueos de Google
+                    cache: 'no-cache',
                     body: JSON.stringify(datos)
                 });
-                alert("✅ ¡Registro enviado con éxito!");
-                window.location.href = "login-tutor.html";
+
+                alert("✅ ¡Registro enviado con éxito! Ya puedes iniciar sesión.");
+                
+                // REDIRECCIÓN UNIFICADA: Siempre al login general
+                window.location.href = "login.html";
+
             } catch (e) {
-                alert("Error");
+                console.error("Error de registro:", e);
+                alert("❌ Hubo un problema al conectar con el servidor.");
                 btn.disabled = false;
+                btn.innerText = "Registrarse ahora";
             }
         }
+
+        // Ejecutar toggle al cargar por si acaso
+        toggleFields();
     </script>
 </body>
 </html>

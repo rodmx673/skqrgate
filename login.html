@@ -23,7 +23,7 @@
     </div>
 
     <script>
-        // URL de tu Servidor (Versión 26)
+        // URL de tu Servidor (Asegúrate de que sea la Versión 27 con los cambios de cabeceras)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbxW2eTmjTj3UtOXJph2qi_-fMwE-A-8AT1EMt7a9achh1o7heNjXn8ZDhAOCJtDLrkP/exec";
 
         async function ejecutarLogin() {
@@ -31,46 +31,53 @@
             const password = document.getElementById('password').value.trim();
             const btn = document.getElementById('btnLogin');
 
-            if(!email || !password) return alert("Completa los datos");
+            if(!email || !password) return alert("⚠️ Por favor, ingresa tus credenciales.");
 
             btn.innerText = "VERIFICANDO...";
             btn.disabled = true;
 
             try {
-                // Primero intentamos login como Tutor (Acción loginTutor que busca en la pestaña TUTORES)
+                // PASO 1: Intentar login en la pestaña TUTORES
                 const responseTutor = await fetch(`${MI_LINK_SERVIDOR}?action=loginTutor&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
                 const resTutor = await responseTutor.json();
 
                 if(resTutor.status === "success") {
-                    // Si es tutor, guardamos sus datos y lo mandamos a su dashboard
-                    resTutor.rol = "Tutor"; // Forzamos el rol para la sesión
+                    // Guardamos la sesión del tutor
+                    resTutor.rol = "Tutor"; 
                     localStorage.setItem('userSession', JSON.stringify(resTutor));
+                    alert("✅ Bienvenido Tutor: " + resTutor.nombreTutor);
                     window.location.href = 'dashboard-tutor.html';
                     return;
                 }
 
-                // Si no fue tutor, intentamos el login general (Directores, Alumnos, etc.)
+                // PASO 2: Si no fue tutor, intentar login en la pestaña USUARIOS (Alumnos, Directores, Docentes)
                 const responseGral = await fetch(`${MI_LINK_SERVIDOR}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
                 const resGral = await responseGral.json();
 
                 if(resGral.status === "success") {
                     localStorage.setItem('userSession', JSON.stringify(resGral));
                     
-                    // Redirección según rol
+                    alert("✅ Acceso correcto como " + resGral.rol);
+
+                    // Redirección inteligente basada en el ROL guardado en USUARIOS
                     if(resGral.rol === "Director") {
                         window.location.href = 'monitor-director.html';
-                    } else {
+                    } else if(resGral.rol === "Alumno") {
                         window.location.href = 'dashboard-alumno.html';
+                    } else {
+                        // Para Docentes u otros roles
+                        alert("Sesión iniciada como: " + resGral.rol);
                     }
                 } else {
-                    alert("Credenciales incorrectas. Verifica tu correo y contraseña.");
+                    // Si ambos intentos fallan
+                    alert("❌ Credenciales incorrectas. Verifica que tu correo y contraseña sean los que registraste.");
                     btn.innerText = "ENTRAR";
                     btn.disabled = false;
                 }
 
             } catch (e) {
-                console.error(e);
-                alert("Error de conexión con el servidor");
+                console.error("Error de Login:", e);
+                alert("❌ Error de conexión con la base de datos.");
                 btn.innerText = "ENTRAR";
                 btn.disabled = false;
             }
