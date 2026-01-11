@@ -17,25 +17,26 @@
 
     <main class="max-w-4xl mx-auto p-6">
         <div class="mb-8">
-            <h2 class="text-2xl font-bold text-slate-800">Bienvenido(a), <span id="nombreTutor">Usuario</span></h2>
-            <p class="text-slate-500 text-sm">Monitoreo de ingresos y salidas.</p>
+            <h2 class="text-2xl font-bold text-slate-800">Bienvenido(a), <span id="nombreTutor">...</span></h2>
+            <p class="text-slate-500">Monitoreo de ingresos y salidas de tus hijos.</p>
         </div>
 
         <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
             <div class="p-6 border-b border-slate-100 bg-slate-50">
-                <h3 class="font-black text-slate-700 uppercase text-xs tracking-widest">Actividad Reciente</h3>
+                <h3 class="font-black text-slate-700 uppercase text-sm tracking-widest">Registros de Hoy</h3>
             </div>
+            
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
                     <thead class="bg-slate-100 text-slate-500 text-[10px] uppercase font-bold">
                         <tr>
-                            <th class="p-4">Alumno</th>
-                            <th class="p-4">Movimiento</th>
+                            <th class="p-4">Hijo/Alumno</th>
+                            <th class="p-4">Evento</th>
                             <th class="p-4">Hora</th>
                         </tr>
                     </thead>
                     <tbody id="tablaHijos" class="divide-y divide-slate-50">
-                        <tr><td colspan="3" class="p-10 text-center text-slate-400">Cargando datos del servidor...</td></tr>
+                        <tr><td colspan="3" class="p-10 text-center text-slate-400">Cargando movimientos...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -43,45 +44,43 @@
     </main>
 
     <script>
+        // USA EL LINK V30 (terminado en D203PA) que vimos en tu captura de pantalla
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVwW22zl1uoAsG6_pcHNYRwu8Y8s9RkVaEPMtt5B30tRFN02EezcXLR2zhw6D203PA/exec";
 
         window.onload = () => {
-            // SEGURIDAD: Verificar si el usuario pasó por el LOGIN
-            const session = JSON.parse(localStorage.getItem('userSession'));
-            
-            if (!session || !session.email) {
-                // Si no hay sesión, mandarlo de vuelta al LOGIN real
-                window.location.replace('login.html'); 
+            const user = JSON.parse(localStorage.getItem('userSession'));
+            if (!user || user.rol !== 'Tutor') {
+                window.location.replace('login.html');
                 return;
             }
-
-            // Si hay sesión, poner el nombre real
-            document.getElementById('nombreTutor').innerText = session.nombre || "Tutor";
-            cargarAsistencias(session.email);
+            document.getElementById('nombreTutor').innerText = user.nombre;
+            cargarAsistencias(user.email);
         };
 
         async function cargarAsistencias(email) {
             try {
                 const resp = await fetch(`${MI_LINK_SERVIDOR}?action=getHijosInfo&email=${encodeURIComponent(email)}`);
                 const data = await resp.json();
+                
                 const tbody = document.getElementById('tablaHijos');
                 tbody.innerHTML = "";
 
                 if (data.status === "success" && data.data.length > 0) {
                     data.data.forEach(reg => {
-                        const color = reg.tipo.toLowerCase() === 'entrada' ? 'text-emerald-600' : 'text-orange-600';
+                        const color = reg.tipo === 'Entrada' ? 'text-emerald-600' : 'text-orange-600';
                         tbody.innerHTML += `
                             <tr class="hover:bg-slate-50">
                                 <td class="p-4 font-bold text-slate-700 uppercase text-xs">${reg.nombreHijo}</td>
-                                <td class="p-4 font-black ${color} text-xs">${reg.tipo.toUpperCase()}</td>
-                                <td class="p-4 text-slate-500 font-mono text-[10px]">${reg.hora}</td>
-                            </tr>`;
+                                <td class="p-4"><span class="font-black ${color}">${reg.tipo.toUpperCase()}</span></td>
+                                <td class="p-4 text-slate-500 font-mono text-xs">${reg.hora}</td>
+                            </tr>
+                        `;
                     });
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="3" class="p-10 text-center text-slate-400">Sin movimientos el día de hoy.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="3" class="p-10 text-center text-slate-400">No hay movimientos registrados hoy.</td></tr>`;
                 }
             } catch (e) {
-                console.error("Error cargando datos:", e);
+                console.error(e);
             }
         }
 
