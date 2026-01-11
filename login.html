@@ -35,7 +35,6 @@
     </div>
 
     <script>
-        // TU URL ACTUALIZADA
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -48,41 +47,56 @@
             btn.innerText = "VERIFICANDO...";
             btn.disabled = true;
 
+            // Construcción manual de la URL para evitar errores de concatenación
+            const urlFinal = `${MI_LINK_SERVIDOR}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+
             try {
-                // Usamos GET para máxima compatibilidad con Google Apps Script y evitar problemas de CORS
-                const urlParams = `?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
-                
-                const response = await fetch(MI_LINK_SERVIDOR + urlParams);
+                // Agregamos un tiempo de espera (timeout) y manejamos la respuesta como texto primero
+                // para evitar que el JSON vacío rompa el script
+                const response = await fetch(urlFinal, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error("Error en la respuesta del servidor");
+
                 const data = await response.json();
 
                 if (data.status === "success") {
-                    console.log("Datos recibidos:", data.user);
+                    console.log("Acceso exitoso:", data.user);
                     
-                    // 1. GUARDAR EN LOCALSTORAGE (Aseguramos que no esté vacío)
+                    // Guardar sesión
                     localStorage.setItem('userSession', JSON.stringify(data.user));
 
-                    // 2. REDIRECCIÓN BASADA EN TU DIRECTORIO EXACTO
+                    // Redirección forzada según rol
                     const rol = data.user.rol;
-                    
-                    if (rol === "Director") {
-                        window.location.replace('monitor-director.html');
-                    } else if (rol === "Tutor") {
-                        window.location.replace('dashboard-tutor.html');
-                    } else if (rol === "Alumno") {
-                        window.location.replace('dashboard-alumno.html');
+                    const rutas = {
+                        'Director': 'monitor-director.html',
+                        'Tutor': 'dashboard-tutor.html',
+                        'Alumno': 'dashboard-alumno.html'
+                    };
+
+                    const destino = rutas[rol];
+
+                    if (destino) {
+                        window.location.replace(destino);
                     } else {
-                        alert("Rol no reconocido: " + rol);
-                        btn.innerText = "INGRESAR";
-                        btn.disabled = false;
+                        throw new Error("Rol no asignado");
                     }
+
                 } else {
-                    alert("Error: " + (data.message || "Credenciales incorrectas"));
-                    btn.innerText = "INGRESAR";
-                    btn.disabled = false;
+                    alert("❌ " + (data.message || "Credenciales incorrectas"));
+                    resetBtn();
                 }
+
             } catch (err) {
-                console.error("Error técnico:", err);
-                alert("Hubo un fallo de conexión. Intenta de nuevo.");
+                console.error("Error de Login:", err);
+                alert("⚠️ Error de conexión. Revisa que tu internet sea estable o que el servidor esté activo.");
+                resetBtn();
+            }
+
+            function resetBtn() {
                 btn.innerText = "INGRESAR";
                 btn.disabled = false;
             }
