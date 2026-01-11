@@ -17,14 +17,19 @@
         <form id="loginForm" class="space-y-4">
             <div>
                 <label class="block text-xs font-black text-slate-500 mb-1 ml-1">EMAIL / USUARIO</label>
-                <input type="email" id="email" required class="w-full p-4 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700" placeholder="tu@email.com">
+                <input type="email" id="email" required
+                    class="w-full p-4 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700"
+                    placeholder="tu@email.com">
             </div>
             <div>
                 <label class="block text-xs font-black text-slate-500 mb-1 ml-1">CONTRASEÑA</label>
-                <input type="password" id="password" required class="w-full p-4 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700" placeholder="••••••••">
+                <input type="password" id="password" required
+                    class="w-full p-4 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700"
+                    placeholder="••••••••">
             </div>
 
-            <button type="submit" id="btnIngresar" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all transform active:scale-95">
+            <button type="submit" id="btnIngresar"
+                class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all transform active:scale-95">
                 INGRESAR
             </button>
         </form>
@@ -35,70 +40,48 @@
     </div>
 
     <script>
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
+        /* ----------  CONFIG  ---------- */
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIbUZu2l-0tFTM7LrRihEu_-oCsCwoiGeIrp0XNjy0v2ugE0fRTLEX4zQW7CxHgd-S/exec";
 
+        /* ----------  LOGIN  ---------- */
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            const btn = document.getElementById('btnIngresar');
-            const email = document.getElementById('email').value.trim().toLowerCase();
+
+            const btn      = document.getElementById('btnIngresar');
+            const email    = document.getElementById('email').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
 
-            btn.innerText = "VERIFICANDO...";
-            btn.disabled = true;
+            if (!email || !password) { alert("Completa todos los campos"); return; }
 
-            // Construcción manual de la URL para evitar errores de concatenación
-            const urlFinal = `${MI_LINK_SERVIDOR}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+            btn.innerText  = "VERIFICANDO...";
+            btn.disabled   = true;
+
+            const url = `${SCRIPT_URL}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
             try {
-                // Agregamos un tiempo de espera (timeout) y manejamos la respuesta como texto primero
-                // para evitar que el JSON vacío rompa el script
-                const response = await fetch(urlFinal, {
-                    method: 'GET',
-                    mode: 'cors',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!response.ok) throw new Error("Error en la respuesta del servidor");
-
-                const data = await response.json();
+                const res = await fetch(url, { method: 'GET', mode: 'cors' });
+                if (!res.ok) throw new Error("Respuesta no ok");
+                const data = await res.json();
 
                 if (data.status === "success") {
-                    console.log("Acceso exitoso:", data.user);
-                    
-                    // Guardar sesión
                     localStorage.setItem('userSession', JSON.stringify(data.user));
-
-                    // Redirección forzada según rol
-                    const rol = data.user.rol;
-                    const rutas = {
-                        'Director': 'monitor-director.html',
-                        'Tutor': 'dashboard-tutor.html',
-                        'Alumno': 'dashboard-alumno.html'
-                    };
-
-                    const destino = rutas[rol];
-
-                    if (destino) {
-                        window.location.replace(destino);
-                    } else {
-                        throw new Error("Rol no asignado");
-                    }
-
+                    const rutas = { Director:'monitor-director.html',Tutor:'dashboard-tutor.html',Alumno:'dashboard-alumno.html' };
+                    const dest  = rutas[data.user.rol];
+                    if (dest) window.location.replace(dest);
+                    else      throw new Error("Rol desconocido");
                 } else {
                     alert("❌ " + (data.message || "Credenciales incorrectas"));
-                    resetBtn();
+                    resetBtn(btn);
                 }
-
             } catch (err) {
-                console.error("Error de Login:", err);
-                alert("⚠️ Error de conexión. Revisa que tu internet sea estable o que el servidor esté activo.");
-                resetBtn();
+                console.error(err);
+                alert("⚠️ Error de conexión. Revisa tu internet o que el servidor esté activo.");
+                resetBtn(btn);
             }
 
-            function resetBtn() {
-                btn.innerText = "INGRESAR";
-                btn.disabled = false;
+            function resetBtn(b) {
+                b.innerText  = "INGRESAR";
+                b.disabled   = false;
             }
         });
     </script>

@@ -19,7 +19,7 @@
             <p class="text-slate-400 text-sm">Control de Acceso V30</p>
         </header>
 
-        <div id="wrapper" class="bg-white rounded-3xl overflow-hidden shadow-2xl mb-6 border-4 border-slate-700 transition-all duration-300">
+        <div id="wrapper" class="bg-white rounded-3xl overflow-hidden mb-6 border-4 border-slate-700 transition-all duration-300">
             <div id="reader" class="w-full"></div>
         </div>
 
@@ -29,29 +29,29 @@
             <div id="iconoGrande" class="text-5xl mt-2"></div>
         </div>
 
-        <button id="btnEncender" onclick="iniciarCamaraManual()" class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-full font-black text-lg shadow-lg transition transform active:scale-95">
+        <button id="btnEncender" onclick="iniciarCamaraManual()"
+                class="w-full bg-blue-600 hover:bg-blue-500 text-white px-6 py-4 rounded-full font-black text-lg shadow-lg transition transform active:scale-95">
             🚀 ENCENDER CÁMARA
         </button>
-        
+
         <div class="text-center mt-6">
             <a href="dashboard-director.html" class="text-slate-500 text-xs hover:text-white underline">Volver al Dashboard</a>
         </div>
     </div>
 
     <script>
-        // URL ACTUALIZADA (EFPLG50)
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
-        
+        /* ----------  CONFIG  ---------- */
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIbUZu2l-0tFTM7LrRihEu_-oCsCwoiGeIrp0XNjy0v2ugE0fRTLEX4zQW7CxHgd-S/exec";
+
         const html5QrCode = new Html5Qrcode("reader");
         let isScanning = false;
-
-        // Contexto de Audio para feedback sonoro
         let audioCtx;
 
+        /* ----------  AUDIO FEEDBACK  ---------- */
         function playSound(freq, duration, type) {
             try {
-                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc  = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
@@ -61,73 +61,73 @@
                 osc.start();
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
                 osc.stop(audioCtx.currentTime + duration);
-            } catch(e) { console.log("Audio feedback no disponible"); }
+            } catch (e) { console.warn('Audio no disponible'); }
         }
 
+        /* ----------  CAMARA  ---------- */
         async function iniciarCamaraManual() {
             const btn = document.getElementById('btnEncender');
-            btn.innerText = "INICIANDO...";
+            btn.innerText = 'INICIANDO...';
             try {
                 await html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    { fps: 20, qrbox: { width: 250, height: 250 } }, 
+                    { facingMode: "environment" },
+                    { fps: 20, qrbox: { width: 250, height: 250 } },
                     onScanSuccess
                 );
                 btn.classList.add('hidden');
                 isScanning = true;
-            } catch (err) { 
-                btn.innerText = "ERROR DE CÁMARA";
+            } catch (err) {
+                btn.innerText = 'ERROR DE CÁMARA';
                 console.error(err);
-                alert("Asegúrate de dar permisos de cámara.");
+                alert('Asegúrate de dar permisos de cámara.');
             }
         }
 
+        /* ----------  LECTURA + BACKEND  ---------- */
         async function onScanSuccess(decodedText) {
             if (!isScanning) return;
-            isScanning = false; // Bloquear escaneo múltiple
+            isScanning = false;
 
-            const wrapper = document.getElementById('wrapper');
-            const panel = document.getElementById('resultado');
-            const txtNombre = document.getElementById('nombreEscaneado');
+            const wrapper   = document.getElementById('wrapper');
+            const panel     = document.getElementById('resultado');
             const txtStatus = document.getElementById('msgStatus');
-            const icono = document.getElementById('iconoGrande');
+            const txtNombre = document.getElementById('nombreEscaneado');
+            const icono     = document.getElementById('iconoGrande');
 
-            // Feedback Visual de Carga
-            panel.className = "bg-blue-600 p-6 rounded-2xl text-center mb-6 block animate-pulse";
-            txtStatus.innerText = "VERIFICANDO...";
-            txtNombre.innerText = "CONECTANDO...";
-            icono.innerText = "⏳";
+            panel.className = 'bg-blue-600 p-6 rounded-2xl text-center mb-6 block animate-pulse';
+            txtStatus.innerText = 'VERIFICANDO...';
+            txtNombre.innerText = 'CONECTANDO...';
+            icono.innerText = '⏳';
 
-            // Limpieza del texto escaneado (Email)
             const emailLimpio = decodedText.trim().toLowerCase();
-            const urlFinal = `${MI_LINK_SERVIDOR}?action=scan&email=${encodeURIComponent(emailLimpio)}`;
+            const urlFinal    = `${SCRIPT_URL}?action=scan&email=${encodeURIComponent(emailLimpio)}`;
 
             try {
-                const response = await fetch(urlFinal);
-                const data = await response.json();
+                const res = await fetch(urlFinal, { method: 'GET', mode: 'cors' });
+                if (!res.ok) throw new Error('Respuesta no ok');
+                const data = await res.json();
 
-                if (data.status === "success") {
-                    playSound(880, 0.2, 'sine'); // Sonido éxito
+                if (data.status === 'success') {
+                    playSound(880, 0.2, 'sine');
                     wrapper.classList.add('scan-success');
-                    panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
+                    panel.className  = 'bg-green-500 p-6 rounded-2xl text-center mb-6 block';
                     txtStatus.innerText = `¡${data.tipo.toUpperCase()} REGISTRADA!`;
-                    txtNombre.innerText = data.nombre || "Usuario";
-                    icono.innerText = "✅";
+                    txtNombre.innerText = data.nombre || 'Usuario';
+                    icono.innerText = '✅';
                 } else {
                     throw new Error(data.message);
                 }
             } catch (err) {
-                console.error("Error de escaneo:", err);
-                playSound(150, 0.4, 'sawtooth'); // Sonido error
+                console.error('Error de escaneo:', err);
+                playSound(150, 0.4, 'sawtooth');
                 wrapper.classList.add('scan-error');
-                panel.className = "bg-red-600 p-6 rounded-2xl text-center mb-6 block";
-                txtStatus.innerText = "ACCESO DENEGADO";
-                txtNombre.innerText = "NO ENCONTRADO";
-                icono.innerText = "❌";
+                panel.className  = 'bg-red-600 p-6 rounded-2xl text-center mb-6 block';
+                txtStatus.innerText = 'ACCESO DENEGADO';
+                txtNombre.innerText = 'NO ENCONTRADO';
+                icono.innerText = '❌';
             } finally {
-                // Resetear para el siguiente alumno después de 3 segundos
                 setTimeout(() => {
-                    panel.className = "hidden";
+                    panel.className = 'hidden';
                     wrapper.classList.remove('scan-success', 'scan-error');
                     isScanning = true;
                 }, 3000);

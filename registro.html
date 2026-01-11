@@ -45,71 +45,63 @@
     </div>
 
     <script>
-        const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
+        /* ----------  CONFIG  ---------- */
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxIbUZu2l-0tFTM7LrRihEu_-oCsCwoiGeIrp0XNjy0v2ugE0fRTLEX4zQW7CxHgd-S/exec";
 
+        /* ----------  UI DINÁMICA  ---------- */
         function toggleFields() {
             const rol = document.getElementById('rol').value;
-            const divID = document.getElementById('divDirectorID');
-            // Se muestra ID solo para alumnos. Directores y Tutores no lo necesitan según el flujo estándar.
-            divID.style.display = (rol === "Alumno") ? "block" : "none";
+            document.getElementById('divDirectorID').style.display = (rol === "Alumno") ? "block" : "none";
         }
 
+        /* ----------  REGISTRO  ---------- */
         async function registrar() {
-            const btn = document.getElementById('btnRegistrar');
-            const rol = document.getElementById('rol').value;
-            const nombre = document.getElementById('nombre').value.trim();
-            const email = document.getElementById('email').value.trim().toLowerCase();
+            const btn      = document.getElementById('btnRegistrar');
+            const rol      = document.getElementById('rol').value;
+            const nombre   = document.getElementById('nombre').value.trim();
+            const email    = document.getElementById('email').value.trim().toLowerCase();
             const password = document.getElementById('password').value.trim();
-            const idEscuela = document.getElementById('idDirector').value.trim() || "N/A";
+            const idEsc    = document.getElementById('idDirector').value.trim().toUpperCase() || "N/A";
 
-            if(!nombre || !email || !password) {
-                return alert("⚠️ Por favor, completa los campos obligatorios.");
-            }
+            /* Validaciones */
+            if (!nombre || !email || !password) return alert("Completa todos los campos.");
+            if (!/^\S+@\S+\.\S+$/.test(email))   return alert("Correo inválido.");
+            if (password.length < 6)             return alert("Contraseña mínima 6 caracteres.");
 
             btn.disabled = true;
             btn.innerText = "PROCESANDO...";
 
-            // Parámetros usando el formato que espera tu Google Apps Script
             const params = new URLSearchParams({
-                action: 'register', 
-                rol: rol,
-                nombre: nombre,
-                email: email,
-                password: password,
-                idDirectorIngresado: idEscuela
+                action: 'register',
+                rol, nombre, email, password,
+                idDirectorIngresado: idEsc
             });
 
             try {
-                // Fetch con método GET y manejo de JSON
-                const response = await fetch(`${MI_LINK_SERVIDOR}?${params.toString()}`);
-                
-                if (!response.ok) throw new Error('Respuesta de red no fue ok');
-                
-                const data = await response.json();
+                const res = await fetch(`${SCRIPT_URL}?${params}`, { method: 'GET', mode: 'cors' });
+                if (!res.ok) throw new Error("Respuesta no ok");
+                const data = await res.json();
 
                 if (data.status === "success") {
-                    alert("✅ ¡Registro exitoso! Ya puedes iniciar sesión.");
+                    alert("✅ Registro exitoso. Serás redirigido...");
                     window.location.replace("login.html");
                 } else {
-                    alert("❌ " + data.message);
+                    alert("❌ " + (data.message || "Error al registrar"));
                     resetBtn(btn);
                 }
-
             } catch (e) {
-                console.error("Error detallado:", e);
-                // Si llegaste aquí pero los datos sí aparecen en el Excel, 
-                // es un error de respuesta de Google pero el registro fue real.
-                alert("✅ El registro se ha enviado al sistema escolar.");
-                window.location.replace("login.html");
+                console.error(e);
+                alert("⚠️ No se pudo conectar con el servidor. Inténtalo de nuevo.");
+                resetBtn(btn);
             }
         }
 
-        function resetBtn(btn) {
-            btn.disabled = false;
-            btn.innerText = "REGISTRARSE AHORA";
+        function resetBtn(b) {
+            b.disabled = false;
+            b.innerText = "REGISTRARSE AHORA";
         }
 
-        // Inicializar estado de campos al cargar
+        /* ----------  INICIALIZAR  ---------- */
         toggleFields();
     </script>
 </body>
