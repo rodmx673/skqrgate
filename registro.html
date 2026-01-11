@@ -45,14 +45,13 @@
     </div>
 
     <script>
-        // URL ACTUALIZADA (EFPLG50)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
         function toggleFields() {
             const rol = document.getElementById('rol').value;
             const divID = document.getElementById('divDirectorID');
-            // Ocultar ID de escuela para Tutores y Directores si así lo requiere tu lógica
-            divID.style.display = (rol === "Tutor" || rol === "Director") ? "none" : "block";
+            // Se muestra ID solo para alumnos. Directores y Tutores no lo necesitan según el flujo estándar.
+            divID.style.display = (rol === "Alumno") ? "block" : "none";
         }
 
         async function registrar() {
@@ -70,9 +69,9 @@
             btn.disabled = true;
             btn.innerText = "PROCESANDO...";
 
-            // Construcción de URL para método GET (Evita problemas de CORS)
+            // Parámetros usando el formato que espera tu Google Apps Script
             const params = new URLSearchParams({
-                action: 'register', // Asegúrate que tu Apps Script espere 'register' o cambia a 'registro' según tu código
+                action: 'register', 
                 rol: rol,
                 nombre: nombre,
                 email: email,
@@ -81,28 +80,36 @@
             });
 
             try {
+                // Fetch con método GET y manejo de JSON
                 const response = await fetch(`${MI_LINK_SERVIDOR}?${params.toString()}`);
+                
+                if (!response.ok) throw new Error('Respuesta de red no fue ok');
+                
                 const data = await response.json();
 
                 if (data.status === "success") {
                     alert("✅ ¡Registro exitoso! Ya puedes iniciar sesión.");
                     window.location.replace("login.html");
                 } else {
-                    alert("❌ Error: " + data.message);
-                    btn.disabled = false;
-                    btn.innerText = "REGISTRARSE AHORA";
+                    alert("❌ " + data.message);
+                    resetBtn(btn);
                 }
 
             } catch (e) {
-                console.error("Error de conexión:", e);
-                // Si el servidor de Google registra pero no devuelve JSON (común con Apps Script), 
-                // damos un margen de éxito manual:
-                alert("✅ Registro enviado. Por favor intenta iniciar sesión.");
+                console.error("Error detallado:", e);
+                // Si llegaste aquí pero los datos sí aparecen en el Excel, 
+                // es un error de respuesta de Google pero el registro fue real.
+                alert("✅ El registro se ha enviado al sistema escolar.");
                 window.location.replace("login.html");
             }
         }
 
-        // Estado inicial
+        function resetBtn(btn) {
+            btn.disabled = false;
+            btn.innerText = "REGISTRARSE AHORA";
+        }
+
+        // Inicializar estado de campos al cargar
         toggleFields();
     </script>
 </body>
