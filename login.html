@@ -1,62 +1,92 @@
-<script>
-        // URL ACTUALIZADA CORRECTAMENTE (EFPLG50)
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - QR Gate Skool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-[2rem] shadow-2xl w-full max-w-md">
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-black text-blue-600 italic">QR GATE</h1>
+            <p class="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Ingreso al Sistema</p>
+        </div>
+
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label class="block text-xs font-black text-slate-500 mb-1 ml-1">EMAIL / USUARIO</label>
+                <input type="email" id="email" required class="w-full p-4 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700" placeholder="tu@email.com">
+            </div>
+            <div>
+                <label class="block text-xs font-black text-slate-500 mb-1 ml-1">CONTRASEÑA</label>
+                <input type="password" id="password" required class="w-full p-4 bg-slate-100 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700" placeholder="••••••••">
+            </div>
+
+            <button type="submit" id="btnIngresar" class="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-lg hover:bg-blue-700 transition-all transform active:scale-95">
+                INGRESAR
+            </button>
+        </form>
+
+        <div class="mt-6 text-center">
+            <a href="index.html" class="text-slate-400 text-xs font-bold hover:text-blue-600">← Volver al inicio</a>
+        </div>
+    </div>
+
+    <script>
+        // TU URL ACTUALIZADA
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
-        async function ejecutarLogin() {
-            const email = document.getElementById('email').value.trim();
-            const password = document.getElementById('password').value.trim();
-            const btn = document.getElementById('btnLogin');
-
-            if(!email || !password) return alert("⚠️ Por favor, ingresa tus credenciales.");
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnIngresar');
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
 
             btn.innerText = "VERIFICANDO...";
             btn.disabled = true;
 
             try {
-                // PASO 1: Intentar login en la pestaña TUTORES
-                const responseTutor = await fetch(`${MI_LINK_SERVIDOR}?action=loginTutor&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-                const resTutor = await responseTutor.json();
+                // Usamos GET para máxima compatibilidad con Google Apps Script y evitar problemas de CORS
+                const urlParams = `?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+                
+                const response = await fetch(MI_LINK_SERVIDOR + urlParams);
+                const data = await response.json();
 
-                if(resTutor.status === "success") {
-                    const sessionData = {
-                        ...resTutor,
-                        rol: "Tutor",
-                        email: email
-                    };
-                    localStorage.setItem('userSession', JSON.stringify(sessionData));
+                if (data.status === "success") {
+                    console.log("Datos recibidos:", data.user);
                     
-                    // Ajustado a resTutor.nombre para que coincida con el servidor
-                    alert("✅ Bienvenido Tutor: " + resTutor.nombre); 
-                    window.location.href = 'dashboard-tutor.html';
-                    return;
-                }
+                    // 1. GUARDAR EN LOCALSTORAGE (Aseguramos que no esté vacío)
+                    localStorage.setItem('userSession', JSON.stringify(data.user));
 
-                // PASO 2: Intentar login en USUARIOS (Alumnos/Directores)
-                const responseGral = await fetch(`${MI_LINK_SERVIDOR}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
-                const resGral = await responseGral.json();
-
-                if(resGral.status === "success") {
-                    localStorage.setItem('userSession', JSON.stringify(resGral));
-                    alert("✅ Acceso correcto como " + resGral.rol);
-
-                    if(resGral.rol === "Director") {
-                        window.location.href = 'monitor-director.html';
-                    } else if(resGral.rol === "Alumno") {
-                        window.location.href = 'dashboard-alumno.html';
+                    // 2. REDIRECCIÓN BASADA EN TU DIRECTORIO EXACTO
+                    const rol = data.user.rol;
+                    
+                    if (rol === "Director") {
+                        window.location.replace('monitor-director.html');
+                    } else if (rol === "Tutor") {
+                        window.location.replace('dashboard-tutor.html');
+                    } else if (rol === "Alumno") {
+                        window.location.replace('dashboard-alumno.html');
                     } else {
-                        alert("Sesión iniciada como: " + resGral.rol);
+                        alert("Rol no reconocido: " + rol);
+                        btn.innerText = "INGRESAR";
+                        btn.disabled = false;
                     }
                 } else {
-                    alert("❌ Credenciales incorrectas. Verifica tus datos.");
-                    btn.innerText = "ENTRAR";
+                    alert("Error: " + (data.message || "Credenciales incorrectas"));
+                    btn.innerText = "INGRESAR";
                     btn.disabled = false;
                 }
-
-            } catch (e) {
-                console.error("Error de Login:", e);
-                alert("❌ Error de conexión con el servidor.");
-                btn.innerText = "ENTRAR";
+            } catch (err) {
+                console.error("Error técnico:", err);
+                alert("Hubo un fallo de conexión. Intenta de nuevo.");
+                btn.innerText = "INGRESAR";
                 btn.disabled = false;
             }
-        }
+        });
     </script>
+</body>
+</html>
