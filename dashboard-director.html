@@ -26,9 +26,7 @@
                 <span class="text-lg group-hover:rotate-12 transition-transform">📷</span>
                 ABRIR SCANNER
             </a>
-
             <div class="h-8 w-[1px] bg-indigo-700 mx-1"></div>
-
             <div class="text-right">
                 <p id="nombreDirector" class="text-[10px] font-bold opacity-80 uppercase leading-none mb-1">Cargando...</p>
                 <p id="reloj" class="text-xs font-mono font-bold text-indigo-300">00:00:00</p>
@@ -37,7 +35,6 @@
     </header>
 
     <div class="p-4 max-w-6xl mx-auto">
-        
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="bg-white p-4 rounded-3xl shadow-sm border-b-4 border-indigo-500">
                 <p class="text-slate-400 text-[9px] font-black uppercase">Escuela ID</p>
@@ -84,7 +81,7 @@
     </div>
 
     <script>
-        // URL ACTUALIZADA AL NUEVO SERVIDOR REPARADO
+        // URL ACTUALIZADA AL NUEVO SERVIDOR EFPLG50
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
         
         let countdown = 10;
@@ -99,11 +96,11 @@
         if (!session) {
             window.location.replace('login.html');
         } else {
-            document.getElementById('nombreDirector').innerText = session.nombre;
+            document.getElementById('nombreDirector').innerText = session.nombre || "Director";
             actualizarMonitor();
         }
 
-        // Sistema de auto-refresco cada 10 segundos
+        // Sistema de auto-refresco
         setInterval(() => {
             countdown--;
             document.getElementById('timer').innerText = countdown + "s";
@@ -114,14 +111,15 @@
         }, 1000);
 
         async function actualizarMonitor() {
+            if (!session) return;
             try {
-                // Se usa encodeURIComponent para evitar errores con caracteres especiales en el email
                 const url = `${MI_LINK_SERVIDOR}?action=getDirectorInfo&email=${encodeURIComponent(session.email)}`;
                 const resp = await fetch(url);
                 const data = await resp.json();
 
                 if (data.status === "success") {
-                    document.getElementById('idEscuela').innerText = data.idEscuela || session.idEscuela;
+                    document.getElementById('idEscuela').innerText = data.idEscuela || "Sin ID";
+                    document.getElementById('countEntradas').innerText = data.totalAsistencias || 0;
                     
                     const tbody = document.getElementById('listaLogs');
                     tbody.innerHTML = "";
@@ -131,7 +129,6 @@
                             const esEntrada = reg.tipo === "Entrada";
                             const badgeColor = esEntrada ? "bg-emerald-100 text-emerald-700 border-emerald-200" : "bg-orange-100 text-orange-700 border-orange-200";
                             
-                            // Actualizar el "Último Tipo" con el registro más reciente (el primero del array)
                             if(index === 0) document.getElementById('lastType').innerText = reg.tipo;
 
                             tbody.innerHTML += `
@@ -146,16 +143,15 @@
                                             ${reg.tipo}
                                         </span>
                                     </td>
-                                </tr>
-                            `;
+                                </tr>`;
                         });
-                        document.getElementById('countEntradas').innerText = data.totalAsistencias;
                     } else {
                         tbody.innerHTML = `<tr><td colspan="3" class="p-20 text-center text-slate-400 italic">No hay actividad registrada hoy.</td></tr>`;
+                        document.getElementById('lastType').innerText = "---";
                     }
                 }
             } catch (e) {
-                console.error("Error de actualización del monitor:", e);
+                console.error("Error monitor:", e);
             }
         }
     </script>

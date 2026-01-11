@@ -37,12 +37,18 @@
     </div>
 
     <script>
-        // URL ACTUALIZADA A LA VERSIÓN 29 (LA NUEVA QUE ME PASASTE)
+        // URL ACTUALIZADA AL ÚLTIMO DEPLOY (EFPLG50)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
         function toggleFields() {
             const rol = document.getElementById('rol').value;
-            document.getElementById('divDirectorID').style.display = (rol === "Tutor / Padre" || rol === "Director") ? "none" : "block";
+            const divID = document.getElementById('divDirectorID');
+            // Los alumnos y docentes necesitan ID de Escuela. Tutores y Directores no.
+            if (rol === "Tutor / Padre" || rol === "Director") {
+                divID.style.display = "none";
+            } else {
+                divID.style.display = "block";
+            }
         }
 
         async function registrar() {
@@ -54,7 +60,7 @@
             const idDirector = document.getElementById('idDirector').value.trim();
 
             if(!nombre || !email || !password) {
-                return alert("⚠️ Por favor, completa todos los campos obligatorios.");
+                return alert("⚠️ Por favor, completa nombre, email y contraseña.");
             }
 
             const datos = {
@@ -67,29 +73,31 @@
             };
 
             btn.disabled = true;
-            btn.innerText = "GUARDANDO EN EXCEL...";
+            btn.innerText = "PROCESANDO...";
 
             try {
-                // Forzamos el envío
+                // El método POST con no-cors es necesario para evitar bloqueos del navegador
                 await fetch(MI_LINK_SERVIDOR, {
                     method: 'POST',
                     mode: 'no-cors',
                     body: JSON.stringify(datos)
                 });
 
+                // Como usamos no-cors, no podemos leer la respuesta, así que esperamos un poco
                 setTimeout(() => {
-                    alert("✅ ¡Registro enviado! Revisa tu Excel ahora.");
+                    alert("✅ ¡Registro exitoso! Ya puedes iniciar sesión.");
                     window.location.href = "login.html";
                 }, 1500);
 
             } catch (e) {
                 console.error("Error:", e);
-                alert("❌ Fallo de conexión.");
+                alert("❌ Error de conexión. Inténtalo de nuevo.");
                 btn.disabled = false;
                 btn.innerText = "Registrarse ahora";
             }
         }
 
+        // Ejecutar al cargar para setear estado inicial del ID Escuela
         toggleFields();
     </script>
 </body>

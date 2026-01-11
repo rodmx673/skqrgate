@@ -1,29 +1,5 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - QR Gate</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
-    <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-md">
-        <h1 class="text-3xl font-black text-center text-indigo-600 mb-2 italic uppercase">QR Gate Skool</h1>
-        <p class="text-slate-400 text-center mb-8 text-xs font-bold uppercase tracking-widest">Panel de Acceso Único</p>
-        
-        <div class="space-y-4">
-            <input type="email" id="email" placeholder="Correo Electrónico" class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition">
-            <input type="password" id="password" placeholder="Contraseña" class="w-full p-4 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500 transition">
-            <button onclick="ejecutarLogin()" id="btnLogin" class="w-full bg-indigo-600 text-white p-4 rounded-2xl font-black uppercase shadow-lg hover:bg-indigo-700 transition active:scale-95">Entrar</button>
-        </div>
-
-        <div class="mt-8 pt-6 border-t border-slate-50 text-center">
-            <p class="text-xs text-slate-400">¿No tienes cuenta? <a href="registro.html" class="text-indigo-600 font-bold hover:underline">Regístrate</a></p>
-        </div>
-    </div>
-
-    <script>
-        // URL ACTUALIZADA A LA VERSIÓN 29 (3PA/exec)
+<script>
+        // URL ACTUALIZADA CORRECTAMENTE (EFPLG50)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
         async function ejecutarLogin() {
@@ -49,12 +25,13 @@
                     };
                     localStorage.setItem('userSession', JSON.stringify(sessionData));
                     
-                    alert("✅ Bienvenido Tutor: " + resTutor.nombreTutor);
+                    // Ajustado a resTutor.nombre para que coincida con el servidor
+                    alert("✅ Bienvenido Tutor: " + resTutor.nombre); 
                     window.location.href = 'dashboard-tutor.html';
                     return;
                 }
 
-                // PASO 2: Intentar login en USUARIOS
+                // PASO 2: Intentar login en USUARIOS (Alumnos/Directores)
                 const responseGral = await fetch(`${MI_LINK_SERVIDOR}?action=login&email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`);
                 const resGral = await responseGral.json();
 
@@ -83,5 +60,3 @@
             }
         }
     </script>
-</body>
-</html>

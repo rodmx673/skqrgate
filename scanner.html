@@ -9,7 +9,7 @@
     <style>
         .scan-success { border: 10px solid #22c55e !important; box-shadow: 0 0 30px #22c55e; }
         .scan-error { border: 10px solid #ef4444 !important; box-shadow: 0 0 30px #ef4444; }
-        #reader video { border-radius: 20px; }
+        #reader video { border-radius: 20px; object-fit: cover; }
     </style>
 </head>
 <body class="bg-slate-900 min-h-screen text-white p-4 font-sans">
@@ -39,17 +39,18 @@
     </div>
 
     <script>
-        // URL ACTUALIZADA AL NUEVO SERVIDOR (V30)
+        // URL ACTUALIZADA (EFPLG50)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
         
         const html5QrCode = new Html5Qrcode("reader");
         let isScanning = false;
 
-        // Sistema de audio para feedback
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Contexto de Audio para feedback sonoro
+        let audioCtx;
 
         function playSound(freq, duration, type) {
             try {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
                 osc.type = type;
@@ -60,7 +61,7 @@
                 osc.start();
                 gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
                 osc.stop(audioCtx.currentTime + duration);
-            } catch(e) { console.log("Audio error"); }
+            } catch(e) { console.log("Audio feedback no disponible"); }
         }
 
         async function iniciarCamaraManual() {
@@ -69,21 +70,21 @@
             try {
                 await html5QrCode.start(
                     { facingMode: "environment" }, 
-                    { fps: 25, qrbox: { width: 250, height: 250 } }, 
+                    { fps: 20, qrbox: { width: 250, height: 250 } }, 
                     onScanSuccess
                 );
                 btn.classList.add('hidden');
                 isScanning = true;
-                if (audioCtx.state === 'suspended') audioCtx.resume();
             } catch (err) { 
                 btn.innerText = "ERROR DE CÁMARA";
                 console.error(err);
+                alert("Asegúrate de dar permisos de cámara.");
             }
         }
 
         async function onScanSuccess(decodedText) {
             if (!isScanning) return;
-            isScanning = false; // Pausar escaneo mientras procesa
+            isScanning = false; // Bloquear escaneo múltiple
 
             const wrapper = document.getElementById('wrapper');
             const panel = document.getElementById('resultado');
@@ -91,49 +92,46 @@
             const txtStatus = document.getElementById('msgStatus');
             const icono = document.getElementById('iconoGrande');
 
-            // UI de carga
+            // Feedback Visual de Carga
             panel.className = "bg-blue-600 p-6 rounded-2xl text-center mb-6 block animate-pulse";
-            txtStatus.innerText = "PROCESANDO...";
-            txtNombre.innerText = "ENVIANDO REGISTRO...";
+            txtStatus.innerText = "VERIFICANDO...";
+            txtNombre.innerText = "CONECTANDO...";
             icono.innerText = "⏳";
 
-            // Enviar datos al Servidor de Google Sheets
-            const urlFinal = `${MI_LINK_SERVIDOR}?action=scan&email=${encodeURIComponent(decodedText.trim().toLowerCase())}`;
+            // Limpieza del texto escaneado (Email)
+            const emailLimpio = decodedText.trim().toLowerCase();
+            const urlFinal = `${MI_LINK_SERVIDOR}?action=scan&email=${encodeURIComponent(emailLimpio)}`;
 
-            fetch(urlFinal, {
-                method: "GET", // Usamos GET para evitar problemas de CORS complejos en redirecciones de Google Script
-                mode: "cors"
-            })
-            .then(response => response.json())
-            .then(data => {
+            try {
+                const response = await fetch(urlFinal);
+                const data = await response.json();
+
                 if (data.status === "success") {
-                    playSound(880, 0.1, 'sine');
+                    playSound(880, 0.2, 'sine'); // Sonido éxito
                     wrapper.classList.add('scan-success');
                     panel.className = "bg-green-500 p-6 rounded-2xl text-center mb-6 block";
                     txtStatus.innerText = `¡${data.tipo.toUpperCase()} REGISTRADA!`;
-                    txtNombre.innerText = data.nombre || decodedText.split('@')[0];
+                    txtNombre.innerText = data.nombre || "Usuario";
                     icono.innerText = "✅";
                 } else {
                     throw new Error(data.message);
                 }
-            })
-            .catch(err => {
-                console.error("Error:", err);
-                playSound(150, 0.3, 'sawtooth');
+            } catch (err) {
+                console.error("Error de escaneo:", err);
+                playSound(150, 0.4, 'sawtooth'); // Sonido error
                 wrapper.classList.add('scan-error');
                 panel.className = "bg-red-600 p-6 rounded-2xl text-center mb-6 block";
-                txtStatus.innerText = "ERROR";
-                txtNombre.innerText = "NO ENCONTRADO / ERROR";
+                txtStatus.innerText = "ACCESO DENEGADO";
+                txtNombre.innerText = "NO ENCONTRADO";
                 icono.innerText = "❌";
-            })
-            .finally(() => {
-                // Reiniciar el escáner después de 3 segundos
+            } finally {
+                // Resetear para el siguiente alumno después de 3 segundos
                 setTimeout(() => {
                     panel.className = "hidden";
                     wrapper.classList.remove('scan-success', 'scan-error');
                     isScanning = true;
                 }, 3000);
-            });
+            }
         }
     </script>
 </body>

@@ -54,7 +54,7 @@
     </main>
 
     <script>
-        // URL ACTUALIZADA AL NUEVO SERVIDOR (V30)
+        // URL ACTUALIZADA (EFPLG50)
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
 
         window.onload = () => {
@@ -66,23 +66,23 @@
             }
 
             const user = JSON.parse(userData);
+            const emailLimpio = user.email.toLowerCase().trim();
 
             // Llenar datos en la interfaz
-            document.getElementById('nombreAlumno').innerText = user.nombre.split(' ')[0]; 
-            document.getElementById('nombreCredencial').innerText = user.nombre;
+            document.getElementById('nombreAlumno').innerText = (user.nombre || "Alumno").split(' ')[0]; 
+            document.getElementById('nombreCredencial').innerText = user.nombre || "Sin Nombre";
             document.getElementById('rolDisplay').innerText = user.rol || "ALUMNO";
-            document.getElementById('idUnico').innerText = user.email;
+            document.getElementById('idUnico').innerText = emailLimpio;
 
-            // Limpiar contenedor QR por si acaso
+            // Limpiar contenedor QR
             document.getElementById("qrcode").innerHTML = "";
 
-            // Generar el QR usando el Email
-            // Es vital que use el email, ya que el scanner busca este dato en la base de datos
+            // Generar el QR usando el Email (Dato clave para el Scanner)
             new QRCode(document.getElementById("qrcode"), {
-                text: user.email.toLowerCase().trim(),
+                text: emailLimpio,
                 width: 200,
                 height: 200,
-                colorDark : "#0f172a", // Slate-900 para mejor contraste
+                colorDark : "#0f172a",
                 colorLight : "#ffffff",
                 correctLevel : QRCode.CorrectLevel.H
             });
@@ -99,7 +99,7 @@
             try {
                 const canvas = await html2canvas(container, {
                     scale: 3, 
-                    backgroundColor: null,
+                    backgroundColor: "#f1f5f9", // bg-slate-100
                     logging: false,
                     useCORS: true
                 });
@@ -110,7 +110,7 @@
                 link.click();
             } catch (err) {
                 console.error(err);
-                alert("Error al generar la imagen. Intenta tomar una captura de pantalla.");
+                alert("Fallo al descargar. Toma una captura de pantalla si el error persiste.");
             } finally {
                 btn.innerHTML = originalText;
                 btn.disabled = false;

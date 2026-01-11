@@ -64,26 +64,30 @@
     </main>
 
     <script>
-        // LINK ACTUALIZADO AL SERVIDOR CORRECTO (V30)
+        // LINK ACTUALIZADO AL SERVIDOR CORRECTO EFPLG50
         const MI_LINK_SERVIDOR = "https://script.google.com/macros/s/AKfycbzVSH0B6Gd--cgQAwaYHJtIVD63JKLl1WkgJiK-ux63JaEL-m_nKdps8k63EFPLG50/exec";
         
         const session = JSON.parse(localStorage.getItem('userSession'));
         let countdown = 10;
 
-        // Validación de Seguridad y Sesión
-        if (!session || session.rol !== "Director") {
+        // Validación de Seguridad Mejorada
+        if (!session) {
             window.location.replace('login.html');
         } else {
-            document.getElementById('nombreDirector').innerText = session.nombre;
+            document.getElementById('nombreDirector').innerText = session.nombre || "Director";
             document.getElementById('idEscuela').innerText = session.idEscuela || "---";
             actualizarMonitor();
         }
 
         // Reloj y Contador de refresco
         setInterval(() => {
-            document.getElementById('reloj').innerText = new Date().toLocaleTimeString();
+            const relojElement = document.getElementById('reloj');
+            if(relojElement) relojElement.innerText = new Date().toLocaleTimeString();
+            
             countdown--;
-            document.getElementById('timer').innerText = countdown + "s";
+            const timerElement = document.getElementById('timer');
+            if(timerElement) timerElement.innerText = countdown + "s";
+            
             if (countdown <= 0) {
                 countdown = 10;
                 actualizarMonitor();
@@ -91,14 +95,14 @@
         }, 1000);
 
         async function actualizarMonitor() {
+            if (!session) return;
             try {
-                // Llamada a la acción específica para directores
-                const resp = await fetch(`${MI_LINK_SERVIDOR}?action=getDirectorInfo&email=${encodeURIComponent(session.email)}`);
+                const url = `${MI_LINK_SERVIDOR}?action=getDirectorInfo&email=${encodeURIComponent(session.email)}`;
+                const resp = await fetch(url);
                 const data = await resp.json();
 
                 if (data.status === "success") {
-                    // Actualizar contador total
-                    document.getElementById('countAsistencias').innerText = data.totalAsistencias;
+                    document.getElementById('countAsistencias').innerText = data.totalAsistencias || 0;
                     
                     const tbody = document.getElementById('listaLogs');
                     tbody.innerHTML = "";
@@ -121,12 +125,11 @@
                                 </tr>`;
                         });
                     } else {
-                        tbody.innerHTML = `<tr><td colspan="3" class="p-20 text-center text-slate-400 italic">No se ha registrado actividad el día de hoy.</td></tr>`;
+                        tbody.innerHTML = `<tr><td colspan="3" class="p-20 text-center text-slate-400 italic">No se ha registrado actividad hoy.</td></tr>`;
                     }
                 }
             } catch (e) { 
-                console.error("Error cargando monitor:", e);
-                // No detenemos el flujo para que el siguiente intento de 10s pueda funcionar
+                console.error("Error monitor:", e);
             }
         }
     </script>
